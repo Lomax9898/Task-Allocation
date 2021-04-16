@@ -3,6 +3,8 @@ import random
 import time
 import math
 
+clock = pg.time.Clock()
+
 
 class Task:
     task_completed = 0
@@ -46,7 +48,7 @@ class Game:
         self.pink = pg.image.load("pink.jpg").convert()
         self.red = pg.image.load("red.jpg").convert()
         self.Task = Task(self.screen)
-        Task.task_tomake = 23
+        Task.task_tomake = 29
         self.result = 0
         self.busy_bot_list = []
         while len(self.busy_bot_list) != 10:
@@ -67,31 +69,92 @@ class Game:
 
     def play(self):
         self.Task.draw()
-        self.start_time = time.time()
-        while Task.task_completed != 24:
-            # self.Commited_Coordinated()
-            self.distancefinder(self.bot_list)
-            self.fitnesschecker(self.distance_list)
-            self.chase(self.bot, self.bot_list[self.result][0], self.bot_list[self.result][1], Task.x, Task.y)
-            Task.task_completed += 1
-        self.end_time = time.time()
-        self.run_time = self.end_time - self.start_time
+        # self.start_time = time.time()
+        while Task.task_completed != 30:
+            self.Commited_Coordinated()
+            # self.distancefinder(self.bot_list)
+            # self.fitnesschecker(self.distance_list)
+            # self.chase(self.bot, self.bot_list[self.result][0], self.bot_list[self.result][1], Task.x, Task.y)
+            # Task.task_completed += 1
+        # self.end_time = time.time()
+        # self.run_time = self.end_time - self.start_time
+        # self.screen.fill(pg.Color("grey"))
+        # pg.draw.rect(self.screen, pg.Color("black"), pg.Rect(300, 15, 1080, 750), 10)
+        # self.screen.fill((0, 70, 0,), (305, 20, 1070, 740))
+        # self.draw_bots(self.bot_list)
+        # self.display_score()
+        # pg.display.flip()
+        # time.sleep(2)
+        # self.show_ending()
+
+    def Commited_Coordinated(self):
+        self.result = 0
+        self.distance_list.clear()
+        check = all(x == 1 for x in self.busy_bot_list)
+        if check:
+            counter_loop = 0
+            for _ in self.bot_list:
+                self.move_bot(counter_loop, self.bot_list[counter_loop][0], self.bot_list[counter_loop][1],
+                              self.target_list[counter_loop][0], self.target_list[counter_loop][1])
+                counter_loop += 1
+                check = all(x == 1 for x in self.busy_bot_list)
+                if not check:
+                    break
+            self.screen.fill(pg.Color("grey"))
+            pg.draw.rect(self.screen, pg.Color("black"), pg.Rect(300, 15, 1080, 750), 10)
+            self.screen.fill((0, 70, 0,), (305, 20, 1070, 740))
+            self.draw_bots(self.bot_list)
+            self.unprepared_tasks(self.task_list)
+            pg.display.flip()
+            clock.tick(50)
+        else:
+            target_in_list = False
+            for task in self.task_list:
+                self.distance_list.clear()
+                for target in self.target_list:
+                    if target[0] == task[0]:
+                        if target[1] == task[1]:
+                            target_in_list = True
+                if target_in_list:
+                    counter_loop = 0
+                    for _ in self.bot_list:
+                        if self.target_list[counter_loop][0] == 0:
+                            pass
+                        else:
+                            self.move_bot(counter_loop, self.bot_list[counter_loop][0], self.bot_list[counter_loop][1],
+                                          self.target_list[counter_loop][0], self.target_list[counter_loop][1])
+                        counter_loop += 1
+                    self.screen.fill(pg.Color("grey"))
+                    pg.draw.rect(self.screen, pg.Color("black"), pg.Rect(300, 15, 1080, 750), 10)
+                    self.screen.fill((0, 70, 0,), (305, 20, 1070, 740))
+                    self.draw_bots(self.bot_list)
+                    self.unprepared_tasks(self.task_list)
+                    pg.display.flip()
+                    clock.tick(50)
+                else:
+                    for bot in self.bot_list:
+                        bot_distance = distance(bot[0], bot[1], task[0], task[1])
+                        self.distance_list.append(bot_distance)
+                    counter_two = 0
+                    for x in self.busy_bot_list:
+                        if x == 1:
+                            self.distance_list[counter_two] = 9999
+                            counter_two += 1
+                        else:
+                            counter_two += 1
+                    check = all(x == 1 for x in self.busy_bot_list)
+                    if check:
+                        break
+                    self.result = self.distance_list.index(min(self.distance_list))
+                    self.target_list[self.result] = task[0], task[1]
+                    self.busy_bot_list[self.result] = 1
         self.screen.fill(pg.Color("grey"))
         pg.draw.rect(self.screen, pg.Color("black"), pg.Rect(300, 15, 1080, 750), 10)
         self.screen.fill((0, 70, 0,), (305, 20, 1070, 740))
         self.draw_bots(self.bot_list)
-        self.display_score()
+        self.unprepared_tasks(self.task_list)
         pg.display.flip()
-        time.sleep(2)
-        self.show_ending()
-
-    def Commited_Coordinated(self):
-        for task in self.task_list:
-            Task.x = task[0]
-            Task.y = task[1]
-            for bot in self.bot_list:
-                bot_distance = distance(bot[0], bot[1], Task.x, Task.y)
-                self.distance_list.append(bot_distance)
+        clock.tick(50)
 
     def show_ending(self):
         self.screen.fill(pg.Color("grey"))
@@ -120,9 +183,11 @@ class Game:
         if x1 == x2 and y1 == y2:
             self.busy_bot_list[var] = 0
             try:
-                self.target_list[var] = 0, 0
-                self.task_list.pop(var)
-                Task.task_completed += 1
+                for idx, task in enumerate(self.task_list):
+                    if self.task_list[idx][0] == x2 and self.task_list[idx][1] == y2:
+                        self.task_list.pop(idx)
+                        Task.task_completed += 1
+                        self.target_list[var] = 0, 0
             except IndexError:
                 pass
 
@@ -153,7 +218,7 @@ class Game:
             self.draw_tasks()
             self.screen.blit(var, (x1, y1))
             pg.display.flip()
-            time.sleep(.05)
+            clock.tick(20)
         try:
             self.task_list.pop(0)
             Task.x = self.task_list[0][0]
@@ -206,9 +271,9 @@ class Game:
         self.screen.blit(score, (15, 15))
 
     def distancefinder(self, list):
-     for bot in self.bot_list:
-        bot_distance = distance(bot[0], bot[1], Task.x, Task.y)
-        self.distance_list.append(bot_distance)
+        for bot in self.bot_list:
+            bot_distance = distance(bot[0], bot[1], Task.x, Task.y)
+            self.distance_list.append(bot_distance)
 
     def reset(self):
         Task.task_completed = 0
