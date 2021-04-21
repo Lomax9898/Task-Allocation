@@ -8,6 +8,7 @@ from copy import deepcopy
 clock = pg.time.Clock()
 
 
+# Class that could be removed later but used to be how tasks were randomized into a list
 class Task:
     task_tomake = 0
     x = random.randint(1, 90) * 15
@@ -25,6 +26,7 @@ class Task:
         self.parent_screen.blit(self.green, (Task.x, Task.y))
 
 
+# The same thing applies to this class as well except it used to make bots
 class Bots:
     x_pos = random.randint(1, 90) * 15
     y_pos = random.randint(3, 49) * 15
@@ -33,6 +35,7 @@ class Bots:
         pass
 
 
+# This class is responsible for everything, a lot of variables and lists are created after pygames is initialized
 class Game:
 
     def __init__(self):
@@ -89,6 +92,7 @@ class Game:
         self.task_list = []
         self.bot_list = []
 
+    # This method clears a lot of lists and resets two counters, also adds a # of zeros to three empty lists
     def setup(self):
         self.busy_bot_list.clear()
         self.target_list.clear()
@@ -98,6 +102,7 @@ class Game:
         self.distance_list.clear()
         self.result_list.clear()
         self.counter_waves = 1
+        self.missteps = 0
         while len(self.busy_bot_list) != int(self.user_bots):
             self.busy_bot_list.append(0)
         while len(self.target_list) != int(self.user_bots):
@@ -105,6 +110,7 @@ class Game:
         while len(self.score_list) != int(self.user_bots):
             self.score_list.append(0)
 
+    # This method is responsible for running the simulation and keeping time of the simulation.
     def play(self):
         if self.active_game:
             if self.randomize:
@@ -115,7 +121,7 @@ class Game:
             self.start_time = time.time()
             self.task_completed = 0
             start_ticks = pg.time.get_ticks()
-            rate = 3
+            rate = 2
             while self.task_completed != int(self.user_tasks) * int(self.user_waves):
                 seconds = (pg.time.get_ticks() - start_ticks) / 1000
                 if self.counter_waves == int(self.user_waves):
@@ -125,7 +131,7 @@ class Game:
                         if self.counter_waves != self.user_waves:
                             self.task_list.extend(self.eternal_task_list[int(self.user_tasks) * self.counter_waves: (
                                     int(self.user_tasks) * (self.counter_waves + 1))])
-                            rate += 3
+                            rate += 2
                             self.counter_waves += 1
                 if int(self.user_strat) == 1:
                     self.Commited_Coordinated()
@@ -163,6 +169,8 @@ class Game:
 
             self.show_ending()
 
+    # This method is the Commitment and Individualism strategy, it's supposed to make robots choose a task and go to 
+    # that task no matter if there is another robot already trying to do that task. 
     def commited_loners(self):
         for idx, bot in enumerate(self.bot_list):
             self.result = 0
@@ -187,8 +195,10 @@ class Game:
         self.draw_misguided()
         self.unprepared_tasks(self.task_list)
         pg.display.flip()
-        clock.tick(25)
+        clock.tick(30)
 
+    # This method is Opportunism and Individualism strategy, if a bot sees a task that is nearby it should go to it,
+    # on the way there if it sees a closer task it should go to that one instead.
     def loners(self):
         for idx, bot in enumerate(self.bot_list):
             self.result = 0
@@ -210,8 +220,11 @@ class Game:
         self.draw_misguided()
         self.unprepared_tasks(self.task_list)
         pg.display.flip()
-        clock.tick(25)
+        clock.tick(30)
 
+    # This is the Opportunism and Mutual Exclusion strategy, even if a robot has already been assigned a task if it gets
+    # a better option it will do that instead the robot will also consider if there are other robots already doing
+    # the task and choose to either do another task or nothing.
     def Opportunistic(self):
         self.result = 0
         self.distance_list.clear()
@@ -305,6 +318,8 @@ class Game:
                     pg.display.flip()
                     clock.tick(60)
 
+    # This is the Commitment and Mutual Exclusion strategy, every robot is assigned a task and then moves and wait for
+    # the next round of bidding to move to it's next assigned task.
     def Commited_Coordinated(self):
         target_in_list = False
         for task in self.task_list:
@@ -357,6 +372,7 @@ class Game:
         pg.display.flip()
         clock.tick(60)
 
+    # This method is what you see on the start screen, I'm sure there is a way to shrink this down.
     def show_start(self):
         color = pg.Color('grey37')
         color_active = pg.Color('grey100')
@@ -453,8 +469,12 @@ class Game:
         pg.display.flip()
         clock.tick(60)
 
+    # This method is what displays on the end screen of each simulation
     def show_ending(self):
         self.screen.fill(pg.Color("grey"))
+        end = pg.font.SysFont('arial', 80)
+        line0 = end.render(f"End Results ", True, (pg.Color("black")))
+        self.screen.blit(line0, (530, 5))
         font = pg.font.SysFont('arial', 30)
         line1 = font.render(f"Tasks Completed: {self.task_completed}", True, (pg.Color("black")))
         self.screen.blit(line1, (450, 100))
@@ -462,16 +482,16 @@ class Game:
             f"Time taken to reach {self.task_completed} tasks with {len(self.bot_list)} bots: {round(self.run_time, 2)}"
             f" seconds", True, (pg.Color("black")))
         self.screen.blit(line3, (450, 150))
-        line2 = font.render("To restart the program, press Enter.", True, (pg.Color("black")))
-        self.screen.blit(line2, (450, 200))
+        line22 = font.render(f"Bots were misdirected: {self.missteps} times", True, (pg.Color("black")))
+        self.screen.blit(line22, (450, 200))
         line4 = font.render(f"Commitment and Mutual Exclusion: {self.one_results}", True, (pg.Color("black")))
         self.screen.blit(line4, (450, 300))
         line5 = font.render(f"Opportunism and Mutual Exclusion: {self.two_results}", True, (pg.Color("black")))
         self.screen.blit(line5, (450, 350))
         line6 = font.render(f"Opportunism and Individualism: {self.three_results}", True, (pg.Color("black")))
-        self.screen.blit(line6, (450, 400))
+        self.screen.blit(line6, (450, 450))
         line7 = font.render(f"Commitment and Individualism: {self.four_results}", True, (pg.Color("black")))
-        self.screen.blit(line7, (450, 450))
+        self.screen.blit(line7, (450, 400))
         line8 = font.render(f" Simple Allocation: {self.five_results}", True, (pg.Color("dark grey")))
         self.screen.blit(line8, (450, 500))
         line9 = font.render(f"Press q to go back to Main Menu", True, (pg.Color("black")))
@@ -486,9 +506,9 @@ class Game:
         self.screen.blit(three, (700, 700))
         four = font.render(f"Press f for Commitment and Individualism", True, (pg.Color("black")))
         self.screen.blit(four, (700, 650))
-
         pg.display.flip()
 
+    # This method is used to move each bot one frame in the direction of x2 and y2, also includes the uncertainty.
     def move_bot(self, var, x1, y1, x2, y2):
         if random.randint(0, 100) < int(self.user_uncertainty):
             if random.randint(0, 1) == 1:
@@ -525,12 +545,14 @@ class Game:
                 except IndexError:
                     pass
 
+    # Old method used for the simple allocation, since simple allocation is still in the program this is kept here.
     def fitnesschecker(self, distance_list):
         for _ in distance_list:
             fitness = _ * random.randint(int(self.user_fitness), int(self.user_fitness2))
             self.result_list.append(fitness)
         self.result = self.result_list.index(min(self.result_list))
 
+    # Old method used to moves bots, since simple allocation is still in the program this is kept here.
     def chase(self, var, x1, y1, x2, y2):
 
         while x1 != x2 or y1 != y2:
@@ -563,6 +585,8 @@ class Game:
         self.distance_list.clear()
         self.result_list.clear()
 
+    # This method controls the task and bot creation and also clears the eternal lists so that bots and task can be made
+    # at new locations
     def eternal_lists(self):
         self.eternal_bot_list.clear()
         self.eternal_task_list.clear()
@@ -578,6 +602,8 @@ class Game:
             Task.y_pos = random.randint(3, 49) * 15
             self.eternal_task_list.append([Task.x_pos, Task.y_pos])
 
+    # The method has a old name that was used for the simple allocation, but it's purpose is to display all tasks in 
+    # task_list on the screen 
     def unprepared_tasks(self, task_list):
         index = 0
         unfocused_task = pg.image.load("blue.jpg").convert()
@@ -585,6 +611,7 @@ class Game:
             self.screen.blit(unfocused_task, (self.task_list[index][0], self.task_list[index][1]))
             index += 1
 
+    # Another old method that showed the next two tasks to be focused
     def draw_tasks(self):
         try:
             self.screen.blit(self.pink, (self.task_list[1][0], self.task_list[1][1]))
@@ -592,6 +619,7 @@ class Game:
         except IndexError:
             pass
 
+    # This method draws each bot onto the screen 
     def draw_bots(self, bot_list):
         index = 0
         self.display_score()
@@ -600,6 +628,7 @@ class Game:
             self.screen.blit(new_bot, (self.bot_list[index][0], self.bot_list[index][1]))
             index += 1
 
+    # This method draws each bot that was misguided then clears that misguided_list
     def draw_misguided(self):
         index = 0
         self.display_score()
@@ -609,6 +638,8 @@ class Game:
             index += 1
         self.misguided_list.clear()
 
+    # This method shows the score above the simulation and two counters displaying tasks remaining and waves left to 
+    # spawn 
     def display_score(self):
         font = pg.font.SysFont('arial', 30)
         score = font.render(f"Tasks Completed:{self.task_completed} / {(int(self.user_tasks) * int(self.user_waves))}",
@@ -645,11 +676,13 @@ class Game:
                               (pg.Color("black")))
         self.screen.blit(counter, (1100, 0))
 
+    # Old method used to find the distance, it's core is still used throughout the strategy methods
     def distancefinder(self):
         for bot in self.bot_list:
             bot_distance = distance(bot[0], bot[1], Task.x, Task.y)
             self.distance_list.append(bot_distance)
 
+    # This method resets everything that the user inputted and also gets rid of the stored results
     def reset(self):
         self.result = 0
         self.user_bots = ""
@@ -666,6 +699,8 @@ class Game:
         self.five_results = 0
         self.randomize = True
 
+    # Main Loop including button presses and mouse clicking events, lets the user change strategy or go back to the main 
+    # menu to change details 
     def run(self):
         running = True
         while running:
@@ -786,13 +821,11 @@ class Game:
                         self.user_strat = 1
                         self.play()
 
-
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_s:
                         self.active_game = True
                         self.user_strat = 2
                         self.play()
-
 
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_d:
@@ -823,10 +856,12 @@ class Game:
                 self.show_start()
 
 
+# The distance formula used to give a bid for the bots
 def distance(x, y, x2, y2):
     return math.sqrt((x - x2) ** 2) + (math.sqrt((y - y2) ** 2))
 
 
+# Runs the game 
 if __name__ == '__main__':
     game = Game()
     game.run()
